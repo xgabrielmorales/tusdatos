@@ -1,0 +1,31 @@
+version: "3.9"
+
+name: tusdatos
+
+services:
+  tusdatos:
+    build:
+      context: .
+      dockerfile: ./compose/dev/Dockerfile
+    image: tusdatos
+    container_name: tusdatos
+    restart: always
+    volumes:
+      - ./:/app
+    tty: true
+    stdin_open: true
+    command: [ "/start" ]
+
+  tusdatos-mongo-db:
+    image: mongo:7.0
+    container_name: tusdatos-mongo-db
+    restart: always
+    ports:
+      - 27017:27017
+    env_file:
+      - .env
+    volumes:
+      - tusdatos-mongo-db-data:/data/db
+
+volumes:
+  tusdatos-mongo-db-data:
