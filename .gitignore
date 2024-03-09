@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pdb-pyhist
+
+# Environments
+.env*
+.venv
+env/
+venv/
+
+# IDE - Vim
+*.swp
+*.swo
