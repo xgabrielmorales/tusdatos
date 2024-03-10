@@ -169,10 +169,18 @@ async def main():
     }
 
     if search_role == "ACTOR":
-        await trials_as_actor_db.insert_one(document=document)
+        await trials_as_actor_db.replace_one(
+            filter={"_id": user_document_num},
+            replacement=document,
+            upsert=True,
+        )
 
     if search_role == "DEMANDADO":
-        await trails_as_defendant_db.insert_one(document=document)
+        await trails_as_defendant_db.replace_one(
+            filter={"_id": user_document_num},
+            replacement=document,
+            upsert=True,
+        )
 
 
 if __name__ == "__main__":
