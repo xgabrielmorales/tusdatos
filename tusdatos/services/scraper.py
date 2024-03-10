@@ -5,7 +5,8 @@ import httpx
 from httpx import codes
 from pydantic import ValidationError
 
-from tusdatos.schemas import Cause, LegalActions, TrailDetail
+from tusdatos.core.database import trails_as_defendant_db, trials_as_actor_db
+from tusdatos.core.schemas import Cause, CauseCollection, LegalActions, TrailDetail
 
 
 class JudicialProcessScraper:
@@ -40,7 +41,7 @@ class JudicialProcessScraper:
         judicatura_id: int,
         juicio_id: int,
         movimiento_juicio_incidente_id: str,
-    ) -> dict:
+    ) -> list[LegalActions]:
         async with httpx.AsyncClient() as client:
             legal_actions_response = await client.post(
                 headers=self.HEADERS,
@@ -143,7 +144,7 @@ class JudicialProcessScraper:
 
         return causes
 
-    async def extract_data(self) -> list[Cause]:
+    async def extract_data(self) -> CauseCollection:
         self._extracted_data = await self._search_all_causes()
 
         corroutines = []
@@ -152,12 +153,34 @@ class JudicialProcessScraper:
 
         await asyncio.gather(*corroutines)
 
-        return self._extracted_data
+        return CauseCollection(causes=self._extracted_data)
 
 
 async def main():
-    scraper = JudicialProcessScraper(search_role="DEMANDADO", user_document_num="")
-    await scraper.extract_data()
+    user_document_num = ""
+    search_role = "DEMANDADO"
+
+    scraper = JudicialProcessScraper(search_role=search_role, user_document_num=user_document_num)
+    causes = await scraper.extract_data()
+
+    document = {
+        "_id": user_document_num,
+        "causes": causes.model_dump(),
+    }
+
+    if search_role == "ACTOR":
+        await trials_as_actor_db.replace_one(
+            filter={"_id": user_document_num},
+            replacement=document,
+            upsert=True,
+        )
+
+    if search_role == "DEMANDADO":
+        await trails_as_defendant_db.replace_one(
+            filter={"_id": user_document_num},
+            replacement=document,
+            upsert=True,
+        )
 
 
 if __name__ == "__main__":
