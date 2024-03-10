@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec python tusdatos/services/scraper.py
+exec python tusdatos/services/run.py
