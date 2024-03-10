@@ -53,7 +53,7 @@ class TrailIncident(BaseModel):
     lstLitiganteDemandado: list[Defendant] | None
 
     # Additional Fields
-    legal_actions: dict | None = None
+    legal_actions: list[LegalActions] | None = None
 
 
 class TrailDetail(BaseModel):
@@ -88,3 +88,7 @@ class Cause(BaseModel):
 
     # Additional Fields
     details: list[TrailDetail] | None = None
+
+
+class CauseCollection(BaseModel):
+    causes: list[Cause]
