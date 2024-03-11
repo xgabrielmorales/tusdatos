@@ -1,9 +1,11 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 
+from tusdatos.core.auth_handler import get_current_user
 from tusdatos.core.database import trails_as_defendant_db, trials_as_actor_db
+from tusdatos.core.models import User
 from tusdatos.core.schemas import (
     CauseCollection,
     LegalActionsCollection,
@@ -30,6 +32,7 @@ COLLECTION = {
 async def serach(
     search_role: Literal["ACTOR", "DEMANDADO"],
     user_document_num: str,
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
     scraper = JudicialProcessScraper(
         user_document_num=user_document_num,
@@ -60,6 +63,7 @@ async def serach(
 async def causes(
     search_role: Literal["ACTOR", "DEMANDADO"],
     user_document_num: str,
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> CauseCollection:
 
     judicial_proceedings = await COLLECTION[search_role].find_one(
@@ -82,6 +86,7 @@ async def detials(
     search_role: Literal["ACTOR", "DEMANDADO"],
     user_document_num: str,
     trial_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> TrailDetailCollecion:
     pipeline = [
         {"$match": {"_id": user_document_num}},
@@ -113,6 +118,7 @@ async def actions(
     judicature_incident_id: int,
     trial_id: str,
     trial_incident_movement_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> LegalActionsCollection:
     pipeline = [
         {"$match": {"_id": user_document_num}},

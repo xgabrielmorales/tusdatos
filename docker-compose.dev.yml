@@ -29,5 +29,16 @@ services:
     volumes:
       - tusdatos-mongo-db-data:/data/db
 
+  tusdatos-postgres-db:
+    image: postgres:16
+    container_name: tusdatos-postgres-db
+    volumes:
+      - tusdatos-postgres-db-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+
 volumes:
   tusdatos-mongo-db-data:
+  tusdatos-postgres-db-data:
