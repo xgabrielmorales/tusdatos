@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 
 from tusdatos.core.auth_handler import get_current_user
-from tusdatos.core.database import trails_as_defendant_db, trials_as_actor_db
+from tusdatos.core.database import trials_as_actor_db, trials_as_defendant_db
 from tusdatos.core.models import User
 from tusdatos.core.schemas import (
     CauseCollection,
     LegalActionsCollection,
-    TrailDetailCollecion,
+    TrialDetailCollecion,
 )
 from tusdatos.services.scraper import JudicialProcessScraper
 
@@ -21,7 +21,7 @@ router = APIRouter(
 
 COLLECTION = {
     "ACTOR": trials_as_actor_db,
-    "DEMANDADO": trails_as_defendant_db,
+    "DEMANDADO": trials_as_defendant_db,
 }
 
 
@@ -87,7 +87,7 @@ async def detials(
     user_document_num: str,
     trial_id: str,
     current_user: Annotated[User, Depends(get_current_user)],
-) -> TrailDetailCollecion:
+) -> TrialDetailCollecion:
     pipeline = [
         {"$match": {"_id": user_document_num}},
         {"$unwind": "$causes"},

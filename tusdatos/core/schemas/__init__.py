@@ -1,17 +1,17 @@
-from tusdatos.core.schemas.trails import (
+from tusdatos.core.schemas.trials import (
     Cause,
     CauseCollection,
     LegalActions,
     LegalActionsCollection,
-    TrailDetail,
-    TrailDetailCollecion,
+    TrialDetail,
+    TrialDetailCollecion,
 )
 
 __all__ = (
     "Cause",
     "CauseCollection",
     "LegalActions",
-    "TrailDetail",
-    "TrailDetailCollecion",
+    "TrialDetail",
+    "TrialDetailCollecion",
     "LegalActionsCollection",
 )

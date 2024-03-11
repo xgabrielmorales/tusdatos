@@ -41,7 +41,7 @@ class Defendant(BaseModel):
     idLitigante: int
 
 
-class TrailIncident(BaseModel):
+class TrialIncident(BaseModel):
     fechaCrea: str
     idIncidenteJudicatura: int
     idJudicaturaDestino: str
@@ -56,11 +56,11 @@ class TrailIncident(BaseModel):
     legal_actions: list[LegalActions] | None = None
 
 
-class TrailDetail(BaseModel):
+class TrialDetail(BaseModel):
     ciudad: str
     idJudicatura: str
     nombreJudicatura: str
-    lstIncidenteJudicatura: list[TrailIncident]
+    lstIncidenteJudicatura: list[TrialIncident]
 
 
 class Cause(BaseModel):
@@ -87,15 +87,15 @@ class Cause(BaseModel):
     nombreTipoResolucion: str | None
 
     # Additional Fields
-    details: list[TrailDetail] | None = None
+    details: list[TrialDetail] | None = None
 
 
 class CauseCollection(BaseModel):
     causes: list[Cause]
 
 
-class TrailDetailCollecion(BaseModel):
-    details: list[TrailDetail]
+class TrialDetailCollecion(BaseModel):
+    details: list[TrialDetail]
 
 
 class LegalActionsCollection(BaseModel):

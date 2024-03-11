@@ -6,7 +6,7 @@ import httpx
 from httpx import AsyncClient, codes
 from pydantic import ValidationError
 
-from tusdatos.core.schemas import Cause, CauseCollection, LegalActions, TrailDetail
+from tusdatos.core.schemas import Cause, CauseCollection, LegalActions, TrialDetail
 
 
 class JudicialProcessScraper:
@@ -73,37 +73,37 @@ class JudicialProcessScraper:
 
         return legal_actions
 
-    async def _search_trail_details(self, client: AsyncClient, cause: Cause) -> list[TrailDetail]:
+    async def _search_trial_details(self, client: AsyncClient, cause: Cause) -> list[TrialDetail]:
         async with self.semaphore:
-            trail_detail_response = await client.get(
+            trial_detail_response = await client.get(
                 headers=self.HEADERS,
                 timeout=self.timeout,
                 url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-CLEX-SERVICE/api/consulta-causas-clex/informacion/getIncidenteJudicatura/{cause.idJuicio}",
             )
 
-        if trail_detail_response.status_code != codes.OK:
+        if trial_detail_response.status_code != codes.OK:
             detail = "Unexpected status code when consulting the details of the trials."
             raise Exception(detail)
 
         try:
-            trail_details: list[TrailDetail] = []
-            for raw_data in trail_detail_response.json():
-                trail_details.append(TrailDetail(**raw_data))
+            trial_details: list[TrialDetail] = []
+            for raw_data in trial_detail_response.json():
+                trial_details.append(TrialDetail(**raw_data))
         except ValidationError:
             detail = "The response was not obtained with the pre-established format when consulting the details of trials."
             raise ValueError(detail)
 
-        for trail_detail in trail_details:
-            for trial_incident in trail_detail.lstIncidenteJudicatura:
+        for trial_detail in trial_details:
+            for trial_incident in trial_detail.lstIncidenteJudicatura:
                 trial_incident.legal_actions = await self._search_legal_actions(
                     client=client,
                     incidente_judicatura_id=trial_incident.idIncidenteJudicatura,
-                    judicatura_id=trail_detail.idJudicatura,
+                    judicatura_id=trial_detail.idJudicatura,
                     juicio_id=cause.idJuicio,
                     movimiento_juicio_incidente_id=trial_incident.idMovimientoJuicioIncidente,
                 )
 
-        cause.details = trail_details
+        cause.details = trial_details
 
     async def _count_causes(self, client: AsyncClient) -> int:
         async with self.semaphore:
@@ -155,7 +155,7 @@ class JudicialProcessScraper:
 
             corroutines = []
             for cause in self._extracted_data:
-                corroutines.append(self._search_trail_details(client=client, cause=cause))
+                corroutines.append(self._search_trial_details(client=client, cause=cause))
 
             await asyncio.gather(*corroutines)
 

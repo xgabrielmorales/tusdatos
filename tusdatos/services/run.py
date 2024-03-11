@@ -1,6 +1,6 @@
 import asyncio
 
-from tusdatos.core.database import trails_as_defendant_db, trials_as_actor_db
+from tusdatos.core.database import trials_as_actor_db, trials_as_defendant_db
 from tusdatos.services.scraper import JudicialProcessScraper
 
 
@@ -10,7 +10,7 @@ async def main():
 
     COLLECTION = {
         "ACTOR": trials_as_actor_db,
-        "DEMANDADO": trails_as_defendant_db,
+        "DEMANDADO": trials_as_defendant_db,
     }
 
     scraper = JudicialProcessScraper(
