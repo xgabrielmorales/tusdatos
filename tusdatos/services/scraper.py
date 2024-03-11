@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import Semaphore
 from typing import Literal
 
 import httpx
@@ -17,10 +18,13 @@ class JudicialProcessScraper:
         search_role: Literal["ACTOR", "DEMANDADO"],
         user_document_num: str,
         timeout: int = 20,
+        max_concurrent_requests: int = 15,
     ):
         self.search_role: str = search_role
         self.timeout: int = timeout
+
         self.user_document_num: str = user_document_num
+        self.semaphore = Semaphore(max_concurrent_requests)
 
     def _search_arguments(self) -> dict:
         search_role = self.search_role.upper()
@@ -42,7 +46,7 @@ class JudicialProcessScraper:
         juicio_id: int,
         movimiento_juicio_incidente_id: str,
     ) -> list[LegalActions]:
-        async with httpx.AsyncClient() as client:
+        async with self.semaphore:
             legal_actions_response = await client.post(
                 headers=self.HEADERS,
                 url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/actuacionesJudiciales",
@@ -70,11 +74,12 @@ class JudicialProcessScraper:
         return legal_actions
 
     async def _search_trail_details(self, client: AsyncClient, cause: Cause) -> list[TrailDetail]:
-        trail_detail_response = await client.get(
-            headers=self.HEADERS,
-            timeout=self.timeout,
-            url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-CLEX-SERVICE/api/consulta-causas-clex/informacion/getIncidenteJudicatura/{cause.idJuicio}",
-        )
+        async with self.semaphore:
+            trail_detail_response = await client.get(
+                headers=self.HEADERS,
+                timeout=self.timeout,
+                url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-CLEX-SERVICE/api/consulta-causas-clex/informacion/getIncidenteJudicatura/{cause.idJuicio}",
+            )
 
         if trail_detail_response.status_code != codes.OK:
             detail = "Unexpected status code when consulting the details of the trials."
@@ -101,12 +106,13 @@ class JudicialProcessScraper:
         cause.details = trail_details
 
     async def _count_causes(self, client: AsyncClient) -> int:
-        response = await client.post(
-            headers=self.HEADERS,
-            json=self._search_arguments(),
-            timeout=self.timeout,
-            url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/contarCausas",
-        )
+        async with self.semaphore:
+            response = await client.post(
+                headers=self.HEADERS,
+                json=self._search_arguments(),
+                timeout=self.timeout,
+                url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/contarCausas",
+            )
 
         if response.status_code != codes.OK:
             detail = "Unexpected status code when consulting the the number of records."
@@ -121,12 +127,13 @@ class JudicialProcessScraper:
     async def _search_all_causes(self, client: AsyncClient) -> list[Cause]:
         total_causes = await self._count_causes(client=client)
 
-        response = await client.post(
-            headers=self.HEADERS,
-            json=self._search_arguments(),
-            timeout=self.timeout,
-            url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/buscarCausas?page=1&size={total_causes}",
-        )
+        async with self.semaphore:
+            response = await client.post(
+                headers=self.HEADERS,
+                json=self._search_arguments(),
+                timeout=self.timeout,
+                url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/buscarCausas?page=1&size={total_causes}",
+            )
 
         if response.status_code != codes.OK:
             detail = "The expected response was not obtained when consulting the court cases."
