@@ -2,7 +2,9 @@ from tusdatos.core.schemas.trails import (
     Cause,
     CauseCollection,
     LegalActions,
+    LegalActionsCollection,
     TrailDetail,
+    TrailDetailCollecion,
 )
 
 __all__ = (
@@ -10,4 +12,6 @@ __all__ = (
     "CauseCollection",
     "LegalActions",
     "TrailDetail",
+    "TrailDetailCollecion",
+    "LegalActionsCollection",
 )
