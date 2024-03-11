@@ -19,10 +19,10 @@ fastapi = "0.110.0"
 uvicorn = {extras = ["standard"], version = "0.28.0"}
 python-jose = {extras = ["cryptography"], version = "3.3.0"}
 passlib = {extras = ["bcrypt"], version = "1.7.4"}
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.28"}
-asyncpg = "^0.29.0"
-alembic = "^1.13.1"
-python-multipart = "^0.0.9"
+sqlalchemy = {extras = ["asyncio"], version = "2.0.28"}
+asyncpg = "0.29.0"
+alembic = "1.13.1"
+python-multipart = "0.0.9"
 
 [tool.poetry.group.dev.dependencies]
 black = "24.1.1"

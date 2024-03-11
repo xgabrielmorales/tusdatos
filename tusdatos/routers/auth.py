@@ -30,7 +30,6 @@ async def register(user_data: CreateUser, db: Session = Depends(get_db)) -> Crea
 
     db_user = User(
         name=user_data.name,
-        document_num=user_data.document_num,
         username=user_data.username,
         password=get_password_hash(user_data.password),
     )
