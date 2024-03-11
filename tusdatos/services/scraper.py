@@ -2,7 +2,7 @@ import asyncio
 from typing import Literal
 
 import httpx
-from httpx import codes
+from httpx import AsyncClient, codes
 from pydantic import ValidationError
 
 from tusdatos.core.schemas import Cause, CauseCollection, LegalActions, TrailDetail
@@ -36,6 +36,7 @@ class JudicialProcessScraper:
 
     async def _search_legal_actions(
         self,
+        client: AsyncClient,
         incidente_judicatura_id: str,
         judicatura_id: int,
         juicio_id: int,
@@ -68,13 +69,12 @@ class JudicialProcessScraper:
 
         return legal_actions
 
-    async def _search_trail_details(self, cause: Cause) -> list[TrailDetail]:
-        async with httpx.AsyncClient() as client:
-            trail_detail_response = await client.get(
-                headers=self.HEADERS,
-                timeout=self.timeout,
-                url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-CLEX-SERVICE/api/consulta-causas-clex/informacion/getIncidenteJudicatura/{cause.idJuicio}",
-            )
+    async def _search_trail_details(self, client: AsyncClient, cause: Cause) -> list[TrailDetail]:
+        trail_detail_response = await client.get(
+            headers=self.HEADERS,
+            timeout=self.timeout,
+            url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-CLEX-SERVICE/api/consulta-causas-clex/informacion/getIncidenteJudicatura/{cause.idJuicio}",
+        )
 
         if trail_detail_response.status_code != codes.OK:
             detail = "Unexpected status code when consulting the details of the trials."
@@ -91,6 +91,7 @@ class JudicialProcessScraper:
         for trail_detail in trail_details:
             for trial_incident in trail_detail.lstIncidenteJudicatura:
                 trial_incident.legal_actions = await self._search_legal_actions(
+                    client=client,
                     incidente_judicatura_id=trial_incident.idIncidenteJudicatura,
                     judicatura_id=trail_detail.idJudicatura,
                     juicio_id=cause.idJuicio,
@@ -99,14 +100,13 @@ class JudicialProcessScraper:
 
         cause.details = trail_details
 
-    async def _count_causes(self) -> int:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                headers=self.HEADERS,
-                json=self._search_arguments(),
-                timeout=self.timeout,
-                url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/contarCausas",
-            )
+    async def _count_causes(self, client: AsyncClient) -> int:
+        response = await client.post(
+            headers=self.HEADERS,
+            json=self._search_arguments(),
+            timeout=self.timeout,
+            url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/contarCausas",
+        )
 
         if response.status_code != codes.OK:
             detail = "Unexpected status code when consulting the the number of records."
@@ -118,16 +118,15 @@ class JudicialProcessScraper:
 
         return int(response.text)
 
-    async def _search_all_causes(self) -> list[Cause]:
-        total_causes = await self._count_causes()
+    async def _search_all_causes(self, client: AsyncClient) -> list[Cause]:
+        total_causes = await self._count_causes(client=client)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                headers=self.HEADERS,
-                json=self._search_arguments(),
-                timeout=self.timeout,
-                url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/buscarCausas?page=1&size={total_causes}",
-            )
+        response = await client.post(
+            headers=self.HEADERS,
+            json=self._search_arguments(),
+            timeout=self.timeout,
+            url=f"{self.BASE_URL}/EXPEL-CONSULTA-CAUSAS-SERVICE/api/consulta-causas/informacion/buscarCausas?page=1&size={total_causes}",
+        )
 
         if response.status_code != codes.OK:
             detail = "The expected response was not obtained when consulting the court cases."
@@ -144,12 +143,13 @@ class JudicialProcessScraper:
         return causes
 
     async def extract_data(self) -> CauseCollection:
-        self._extracted_data = await self._search_all_causes()
+        async with httpx.AsyncClient() as client:
+            self._extracted_data = await self._search_all_causes(client=client)
 
-        corroutines = []
-        for cause in self._extracted_data:
-            corroutines.append(self._search_trail_details(cause))
+            corroutines = []
+            for cause in self._extracted_data:
+                corroutines.append(self._search_trail_details(client=client, cause=cause))
 
-        await asyncio.gather(*corroutines)
+            await asyncio.gather(*corroutines)
 
         return CauseCollection(causes=self._extracted_data)
