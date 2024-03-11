@@ -8,27 +8,29 @@ async def main():
     user_document_num = ""
     search_role = "DEMANDADO"
 
-    scraper = JudicialProcessScraper(search_role=search_role, user_document_num=user_document_num)
+    COLLECTION = {
+        "ACTOR": trials_as_actor_db,
+        "DEMANDADO": trails_as_defendant_db,
+    }
+
+    scraper = JudicialProcessScraper(
+        user_document_num=user_document_num,
+        search_role=search_role,
+    )
     causes = await scraper.extract_data()
 
     document = {
         "_id": user_document_num,
-        "causes": causes.model_dump(),
+        **causes.model_dump(),
     }
 
-    if search_role == "ACTOR":
-        await trials_as_actor_db.replace_one(
-            filter={"_id": user_document_num},
-            replacement=document,
-            upsert=True,
-        )
+    kwargs = {
+        "filter": {"_id": user_document_num},
+        "replacement": document,
+        "upsert": True,
+    }
 
-    if search_role == "DEMANDADO":
-        await trails_as_defendant_db.replace_one(
-            filter={"_id": user_document_num},
-            replacement=document,
-            upsert=True,
-        )
+    await COLLECTION[search_role].replace_one(**kwargs)
 
 
 if __name__ == "__main__":

@@ -92,3 +92,11 @@ class Cause(BaseModel):
 
 class CauseCollection(BaseModel):
     causes: list[Cause]
+
+
+class TrailDetailCollecion(BaseModel):
+    details: list[TrailDetail]
+
+
+class LegalActionsCollection(BaseModel):
+    actions: list[LegalActions]
