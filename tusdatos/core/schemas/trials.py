@@ -64,27 +64,13 @@ class TrialDetail(BaseModel):
 
 
 class Cause(BaseModel):
-    cedula: str | None
     estadoActual: str | None
     fechaIngreso: str | None
-    fechaProvidencia: str | None
     id: int
-    idCanton: str | None
-    idEstadoJuicio: str | None
-    idJudicatura: str | None
     idJuicio: str | None
     idMateria: int | None
-    idProvincia: str | None
     iedocumentoAdjunto: str | None
-    nombre: str | None
     nombreDelito: str | None
-    nombreEstadoJuicio: str | None
-    nombreJudicatura: str | None
-    nombreMateria: str | None
-    nombreProvidencia: str | None
-    nombreProvincia: str | None
-    nombreTipoAccion: str | None
-    nombreTipoResolucion: str | None
 
     # Additional Fields
     details: list[TrialDetail] | None = None
