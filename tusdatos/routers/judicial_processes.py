@@ -29,7 +29,7 @@ COLLECTION = {
     path="/search",
     description="Search and store a user's judicial process information.",
 )
-async def serach(
+async def search(
     search_role: Literal["ACTOR", "DEMANDADO"],
     user_document_num: str,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -79,10 +79,10 @@ async def causes(
 
 
 @router.get(
-    path="/detials",
+    path="/details",
     description="List of details of a judicial process.",
 )
-async def detials(
+async def details(
     search_role: Literal["ACTOR", "DEMANDADO"],
     user_document_num: str,
     trial_id: str,
