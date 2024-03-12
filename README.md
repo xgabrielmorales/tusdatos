@@ -22,7 +22,7 @@ Para la segunda parte, se implementó una API REST (en FastAPI) que expone los d
    $ cd tusdatos
    ````
    ```bash
-   $ mkdir .env
+   $ touch .env
    ````
    Aquí tienes unas de ejemplo que pueden servir: 🤙
     ```bash
@@ -72,3 +72,8 @@ Si completaste las sección aterior, entonces estás listo para consumir el API,
 > [!NOTE]
 > Si no te es posible ver el sitio web de la documentación de OpenAPI de FastAPI es porque algo salió mal en la sección anterior. Asegurate de que los servicios de docker del proyecto estén corriendo y que no exista ningún otro servicios ocupando ya el puerto `8000`.
 > 
+
+## Consultas en paralelo
+
+Ejecutar 15 consultas paralelas implica un requerimiento de hardware, donde 15 procesos están siendo ejecutados simultáneamente por distintos CPUs. Lamentablemente, mi máquina no tiene tantos CPUs, por lo que no podría replicar con exactitud el escenario. Sin embargo, el escenario que mi máquina sí permite replicar es el de 15 consultas concurrentes, es decir, 15 procesos que serán ejecutados en un mismo periodo de tiempo (pero no simultáneos).
+
