@@ -25,17 +25,12 @@ alembic = "1.13.1"
 python-multipart = "0.0.9"
 
 [tool.poetry.group.dev.dependencies]
-black = "24.1.1"
 ipython = "8.22.2"
-isort = "5.13.2"
 jedi-language-server = "0.41.2"
 ruff-lsp = "0.0.52"
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+line-length = 120
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
-
-[tool.black]
-line-length = 100
