@@ -29,6 +29,18 @@ ipython = "8.22.2"
 jedi-language-server = "0.41.2"
 ruff-lsp = "0.0.52"
 
+[tool.poetry.group.test.dependencies]
+pytest = "7.4.4"
+pytest-xdist = "3.5.0"
+pytest-asyncio = "^0.23.6"
+
+[tool.pytest.ini_options]
+addopts = "-vv --last-failed --exitfirst --disable-warnings"
+migrations= false
+minversion = "7.4.4"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+
 [tool.ruff]
 line-length = 120
 

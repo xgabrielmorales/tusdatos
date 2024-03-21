@@ -6,7 +6,7 @@ services:
   tusdatos:
     build:
       context: .
-      dockerfile: ./compose/dev/Dockerfile
+      dockerfile: ./compose/test/Dockerfile
     image: tusdatos
     container_name: tusdatos
     restart: always
@@ -17,9 +17,10 @@ services:
       - 8000:8000
     volumes:
       - ./:/app
+    env_file:
+      - .env
     tty: true
     stdin_open: true
-    command: [ "/start" ]
 
   tusdatos-mongo-db:
     image: mongo:7.0
