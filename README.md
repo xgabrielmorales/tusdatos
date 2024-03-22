@@ -62,6 +62,10 @@ Para la segunda parte, se implementó una API REST (en FastAPI) que expone los d
    ```bash
    $ docker compose -f docker-compose.dev.yml up -d
    ```
+6. Como adicional para ejecutar los tests utiliza el comando:
+   ```bash
+   $ docker compose -f docker-compose.test.yml run --rm tusdatos pytest
+   ```
 
 Excelente, ya estás listo para consumir el REST API. 💪
 
