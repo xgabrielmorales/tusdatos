@@ -7,7 +7,7 @@ class CreateUser(BaseModel):
     password: str
 
 
-class CreatedUser(BaseModel):
+class CreatedUserData(BaseModel):
     name: str
     username: str
 
