@@ -2,6 +2,7 @@ import os
 
 import pytest
 from fastapi.testclient import TestClient
+from tusdatos.core.database import SessionLocal
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -34,3 +35,14 @@ def client():
     from tusdatos.main import app
 
     return TestClient(app)
+
+
+@pytest.fixture(scope="function")
+def db_session():
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.rollback()
+        db.close()
