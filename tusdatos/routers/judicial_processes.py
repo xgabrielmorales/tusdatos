@@ -1,28 +1,20 @@
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
-from fastapi.exceptions import HTTPException
 
 from tusdatos.core.auth_handler import get_current_user
-from tusdatos.core.database import trials_as_actor_db, trials_as_defendant_db
 from tusdatos.core.models import User
 from tusdatos.core.schemas import (
     CauseCollection,
     LegalActionsCollection,
     TrialDetailCollecion,
 )
-from tusdatos.services.scraper import JudicialProcessScraper
+from tusdatos.services.judicial_processes import get_actions, get_causes, get_details, serach_judicial_processes
 
 router = APIRouter(
     prefix="/judicial-processes",
     tags=["Judicial Processes"],
 )
-
-
-COLLECTION = {
-    "ACTOR": trials_as_actor_db,
-    "DEMANDADO": trials_as_defendant_db,
-}
 
 
 @router.get(
@@ -34,26 +26,7 @@ async def search(
     user_document_num: str,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
-    scraper = JudicialProcessScraper(
-        user_document_num=user_document_num,
-        search_role=search_role,
-    )
-    causes = await scraper.extract_data()
-
-    document = {
-        "_id": user_document_num,
-        **causes.model_dump(),
-    }
-
-    kwargs = {
-        "filter": {"_id": user_document_num},
-        "replacement": document,
-        "upsert": True,
-    }
-
-    await COLLECTION[search_role].replace_one(**kwargs)
-
-    return None
+    return serach_judicial_processes()
 
 
 @router.get(
@@ -65,17 +38,10 @@ async def causes(
     user_document_num: str,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CauseCollection:
-
-    judicial_proceedings = await COLLECTION[search_role].find_one(
-        filter={"_id": user_document_num},
-        projection={"_id": 0, "causes.details": 0},
+    return get_causes(
+        search_role=search_role,
+        user_document_num=user_document_num,
     )
-
-    if judicial_proceedings is None:
-        detail = "No stored data was found for the given user."
-        raise HTTPException(status_code=404, detail=detail)
-
-    return judicial_proceedings
 
 
 @router.get(
@@ -88,23 +54,11 @@ async def details(
     trial_id: str,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TrialDetailCollecion:
-    pipeline = [
-        {"$match": {"_id": user_document_num}},
-        {"$unwind": "$causes"},
-        {"$match": {"causes.idJuicio": trial_id}},
-        {"$unwind": "$causes.details"},
-        {"$replaceRoot": {"newRoot": "$causes.details"}},
-    ]
-
-    cursor = COLLECTION[search_role].aggregate(pipeline=pipeline)
-
-    details = [document async for document in cursor]
-
-    if not details:
-        detail = "No stored data was found for the given user."
-        raise HTTPException(status_code=404, detail=detail)
-
-    return {"details": details}
+    return get_details(
+        search_role=search_role,
+        user_document_num=user_document_num,
+        trial_id=trial_id,
+    )
 
 
 @router.get(
@@ -114,35 +68,17 @@ async def details(
 async def actions(
     search_role: Literal["ACTOR", "DEMANDADO"],
     user_document_num: str,
+    trial_id: str,
     judicature_id: str,
     judicature_incident_id: int,
-    trial_id: str,
     trial_incident_movement_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> LegalActionsCollection:
-    pipeline = [
-        {"$match": {"_id": user_document_num}},
-        {"$unwind": "$causes"},
-        {"$match": {"causes.idJuicio": trial_id}},
-        {"$unwind": "$causes.details"},
-        {"$match": {"causes.details.idJudicatura": judicature_id}},
-        {"$unwind": "$causes.details.lstIncidenteJudicatura"},
-        {
-            "$match": {
-                "causes.details.lstIncidenteJudicatura.idMovimientoJuicioIncidente": trial_incident_movement_id,
-                "causes.details.lstIncidenteJudicatura.idIncidenteJudicatura": judicature_incident_id,
-            },
-        },
-        {"$unwind": "$causes.details.lstIncidenteJudicatura.legal_actions"},
-        {"$replaceRoot": {"newRoot": "$causes.details.lstIncidenteJudicatura.legal_actions"}},
-    ]
-
-    cursor = COLLECTION[search_role].aggregate(pipeline=pipeline)
-
-    actions = [document async for document in cursor]
-
-    if not actions:
-        detail = "No stored data was found for the given user."
-        raise HTTPException(status_code=404, detail=detail)
-
-    return {"actions": actions}
+    return get_actions(
+        search_role=search_role,
+        user_document_num=user_document_num,
+        trial_id=trial_id,
+        judicature_id=judicature_id,
+        judicature_incident_id=judicature_incident_id,
+        trial_incident_movement_id=trial_incident_movement_id,
+    )
