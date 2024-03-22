@@ -2,7 +2,6 @@ import asyncio
 from asyncio import Semaphore
 from typing import Literal
 
-import httpx
 from httpx import AsyncClient, codes
 from pydantic import ValidationError
 
@@ -90,9 +89,12 @@ class JudicialProcessScraper:
             for raw_data in trial_detail_response.json():
                 trial_details.append(TrialDetail(**raw_data))
         except ValidationError:
-            detail = "The response was not obtained with the pre-established format when consulting the details of trials."
+            detail = (
+                "The response was not obtained with the pre-established format when consulting the details of trials."
+            )
             raise ValueError(detail)
 
+        # Search for legal actions
         for trial_detail in trial_details:
             for trial_incident in trial_detail.lstIncidenteJudicatura:
                 trial_incident.legal_actions = await self._search_legal_actions(
@@ -119,14 +121,18 @@ class JudicialProcessScraper:
             raise Exception(detail)
 
         if not response.text.isnumeric():
-            detail = "The response was not obtained with the pre-established format when consulting the number of records."
+            detail = (
+                "The response was not obtained with the pre-established format when consulting the number of records."
+            )
             raise ValueError(detail)
 
         return int(response.text)
 
-    async def _search_all_causes(self, client: AsyncClient) -> list[Cause]:
-        total_causes = await self._count_causes(client=client)
-
+    async def _search_all_causes(
+        self,
+        client: AsyncClient,
+        total_causes: int,
+    ) -> list[Cause]:
         async with self.semaphore:
             response = await client.post(
                 headers=self.HEADERS,
@@ -149,14 +155,25 @@ class JudicialProcessScraper:
 
         return causes
 
-    async def extract_data(self) -> CauseCollection:
-        async with httpx.AsyncClient() as client:
-            self._extracted_data = await self._search_all_causes(client=client)
+    async def extract_data(self, client: AsyncClient = AsyncClient()) -> CauseCollection:
+        async with client:
+            # Count all causes
+            total_causes = await self._count_causes(client=client)
 
-            corroutines = []
-            for cause in self._extracted_data:
-                corroutines.append(self._search_trial_details(client=client, cause=cause))
+            # Search for all causes
+            causes = await self._search_all_causes(
+                client=client,
+                total_causes=total_causes,
+            )
 
-            await asyncio.gather(*corroutines)
+            # Search for details
+            detail_corrutines = [
+                self._search_trial_details(
+                    client=client,
+                    cause=cause,
+                )
+                for cause in causes
+            ]
+            await asyncio.gather(*detail_corrutines)
 
-        return CauseCollection(causes=self._extracted_data)
+        return CauseCollection(causes=causes)

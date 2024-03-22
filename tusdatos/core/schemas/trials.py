@@ -12,6 +12,7 @@ class LegalActions(BaseModel):
     idJudicatura: str
     idJuicio: str
     idMovimientoJuicioIncidente: int
+    idTablaReferencia: str
     ieDocumentoAdjunto: str
     ieTablaReferencia: str
     nombreArchivo: str
@@ -59,8 +60,9 @@ class TrialIncident(BaseModel):
 class TrialDetail(BaseModel):
     ciudad: str
     idJudicatura: str
-    nombreJudicatura: str
+    idJuicio: str
     lstIncidenteJudicatura: list[TrialIncident]
+    nombreJudicatura: str
 
 
 class Cause(BaseModel):
