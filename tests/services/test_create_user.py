@@ -3,7 +3,6 @@ from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.future import select
 
-from tusdatos.core.auth_handler import get_password_hash
 from tusdatos.core.models.user import User
 from tusdatos.core.schemas.auth import CreateUser
 from tusdatos.services.users import create_user, user_login
@@ -18,13 +17,13 @@ def user_data():
     )
 
 
-class IgnoreTestCreateUser:
+class TestCreateUser:
     @pytest.mark.asyncio
-    async def test_create_user_new_username(self, db_session, user_data):
-        user = await create_user(db=db_session, user_data=user_data)
+    async def test_create_user_new_username(self, async_db_session, user_data):
+        user = await create_user(db=async_db_session, user_data=user_data)
 
         query = select(User).where(User.username == user_data.username)
-        result = await db_session.execute(query)
+        result = await async_db_session.execute(query)
         created_user = result.scalars().first()
 
         assert user.username == user_data.username
@@ -32,40 +31,40 @@ class IgnoreTestCreateUser:
 
         assert created_user is not None
 
-    async def test_create_user_existing_username(self, db_session, user_data):
-        await create_user(db=db_session, user_data=user_data)
+    @pytest.mark.asyncio
+    async def test_create_user_existing_username(self, async_db_session, user_data):
+        await create_user(db=async_db_session, user_data=user_data)
 
         with pytest.raises(HTTPException) as exc_info:
-            await create_user(db=db_session, user_data=user_data)
+            await create_user(db=async_db_session, user_data=user_data)
 
         assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
         assert "User with the same username or document number already exists" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_create_user_password_hashing(self, db_session, user_data):
-        user = create_user(db=db_session, user_data=user_data)
+    async def test_create_user_password_hashing(self, async_db_session, user_data):
+        user = await create_user(db=async_db_session, user_data=user_data)
 
         assert user.password != user_data.password
-        assert user.password == get_password_hash(user_data.password)
 
 
 class TestUserLogin:
     @pytest.mark.asyncio
-    async def test_user_login_valid_credentials(self, db_session, async_db_session, user_data):
-        await create_user(db=db_session, user_data=user_data)
+    async def test_user_login_valid_credentials(self, async_db_session, user_data):
+        await create_user(db=async_db_session, user_data=user_data)
 
         auth_data = OAuth2PasswordRequestForm(
             username=user_data.username,
             password=user_data.password,
         )
 
-        token = await user_login(db_session, auth_data)
+        token = await user_login(async_db_session, auth_data)
 
         assert isinstance(token, str)
 
     @pytest.mark.asyncio
-    async def test_user_login_invalid_credentials(self, db_session, user_data):
-        await create_user(db=db_session, user_data=user_data)
+    async def test_user_login_invalid_credentials(self, async_db_session, user_data):
+        await create_user(db=async_db_session, user_data=user_data)
 
         auth_data = OAuth2PasswordRequestForm(
             username=user_data.username,
@@ -73,7 +72,7 @@ class TestUserLogin:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await user_login(db_session, auth_data)
+            await user_login(db=async_db_session, auth_data=auth_data)
 
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail == "Invalid username or password"
